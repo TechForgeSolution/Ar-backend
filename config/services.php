@@ -47,4 +47,9 @@ return [
         'project_id'  => env('FIREBASE_PROJECT_ID'),
     ],
 
+    'carey' => [
+        'url' => env('CAREY_API_URL', 'https://backend-carey.tfs237.com/v1'),
+        'key' => env('CAREY_API_KEY'),
+    ],
+
 ];

@@ -60,9 +60,9 @@ class AuthService
                 'code_parrainage'    => $codeParrainage,
                 'parrain_id'         => $parrainId,
                 'profil_complet'     => true,
-                // Téléphone : directement vérifié, pas besoin d'OTP
+                // L'inscription par téléphone est autorisée après validation de l'OTP Carey.
                 'telephone_verified' => !$isEmail,
-                // Email : nécessite vérification OTP
+                'telephone_verified_at' => !$isEmail ? now() : null,
                 'email_verified'     => false,
                 'solde'              => 0,
                 'validated'          => false,

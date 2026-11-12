@@ -34,6 +34,9 @@ Route::post('/otp/email/verifier', [AuthController::class, 'verifierOtpEmail']);
 // Routes publiques
 Route::post('/inscription', [AuthController::class, 'inscription']);
 Route::post('/connexion', [AuthController::class, 'connexion']);
+Route::post('/otp/telephone/envoyer', [AuthController::class, 'envoyerOtpTelephone'])->middleware('throttle:5,1');
+Route::post('/otp/telephone/verifier', [AuthController::class, 'verifierOtpTelephone'])->middleware('throttle:10,1');
+Route::post('/mot-de-passe/reinitialiser', [AuthController::class, 'reinitialiserMotDePasse'])->middleware('throttle:5,1');
 
  // OTP Twilio (NOUVEAU)
 Route::post('/otp/envoyer',  [AuthController::class, 'envoyerOtp']);
@@ -155,4 +158,3 @@ Route::get('/cours/progression', [CoursController::class, 'getProgression']);
 
     
 });
-

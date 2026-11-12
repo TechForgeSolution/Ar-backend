@@ -4,20 +4,28 @@ namespace App\Http\Controllers\Api\AutoEcole;
 
 use App\Http\Controllers\Controller;
 use App\Services\AutoEcole\AuthService;
+use App\Services\AutoEcole\CareyOtpService;
 use App\Services\AutoEcole\DashboardService;
+use App\Models\AutoEcoleUser;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
 class AuthController extends Controller
 {
     protected $authService;
     protected $dashboardService;
+    protected CareyOtpService $careyOtpService;
 
-    public function __construct(AuthService $authService, DashboardService $dashboardService)
-    {
+    public function __construct(
+        AuthService $authService,
+        DashboardService $dashboardService,
+        CareyOtpService $careyOtpService
+    ) {
         $this->authService = $authService;
         $this->dashboardService = $dashboardService;
+        $this->careyOtpService = $careyOtpService;
     }
 
     // ──────────────────────────────────────────
@@ -26,6 +34,13 @@ class AuthController extends Controller
     public function inscription(Request $request): JsonResponse
     {
         try {
+            if (is_string($request->input('telephone'))) {
+                $telephone = $this->careyOtpService->normalizePhone($request->input('telephone'));
+                if ($telephone !== null) {
+                    $request->merge(['telephone' => $telephone]);
+                }
+            }
+
             $validated = $request->validate([
     'nom'              => 'required|string|max:255',
     'prenom'           => 'required|string|max:255',
@@ -36,9 +51,24 @@ class AuthController extends Controller
     'type_permis'      => 'required|in:permis_a,permis_b,permis_t',
     'centre_examen_id' => 'nullable|exists:centres_examen,id',
     'code_parrainage'  => 'required|string',
+    'otp_token'        => 'required_with:telephone|nullable|string',
 ]);
 
+            if (!empty($validated['telephone']) && !$this->careyOtpService->isVerified(
+                $validated['telephone'],
+                'inscription',
+                $validated['otp_token']
+            )) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vérifiez votre numéro WhatsApp avant de créer votre compte.',
+                ], 422);
+            }
+
             $result = $this->authService->inscription($validated);
+            if ($result['success'] && !empty($validated['telephone'])) {
+                $this->careyOtpService->consumeVerification($validated['telephone'], 'inscription');
+            }
             return response()->json($result, $result['success'] ? 201 : 422);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -51,6 +81,124 @@ class AuthController extends Controller
             Log::error('Erreur inscription', ['message' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => 'Erreur serveur'], 500);
         }
+    }
+
+    public function envoyerOtpTelephone(Request $request): JsonResponse
+    {
+        $request->validate([
+            'telephone' => 'required|string',
+            'purpose' => 'required|in:inscription,recuperation',
+        ]);
+
+        $telephone = $this->careyOtpService->normalizePhone($request->string('telephone')->toString());
+        if ($telephone === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Entrez un numéro WhatsApp camerounais valide (9 chiffres ou indicatif +237).',
+            ], 422);
+        }
+
+        $purpose = $request->string('purpose')->toString();
+        $user = AutoEcoleUser::where('telephone', $telephone)->first();
+
+        if ($purpose === 'inscription' && $user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Un compte utilise déjà ce numéro WhatsApp.',
+            ], 422);
+        }
+
+        if ($purpose === 'recuperation' && (!$user || $user->auth_provider !== 'telephone' || !$user->telephone_verified)) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Si ce numéro correspond à un compte, un code lui sera envoyé sur WhatsApp.',
+            ]);
+        }
+
+        $result = $this->careyOtpService->send($telephone, $purpose);
+        if (!$result['success']) {
+            return response()->json($result, $result['status']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Un code de vérification a été envoyé sur WhatsApp.',
+        ]);
+    }
+
+    public function verifierOtpTelephone(Request $request): JsonResponse
+    {
+        $request->validate([
+            'telephone' => 'required|string',
+            'purpose' => 'required|in:inscription,recuperation',
+            'code' => 'required|string|digits:6',
+        ]);
+
+        $telephone = $this->careyOtpService->normalizePhone($request->string('telephone')->toString());
+        if ($telephone === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Entrez un numéro WhatsApp camerounais valide.',
+            ], 422);
+        }
+
+        $purpose = $request->string('purpose')->toString();
+        if ($purpose === 'recuperation') {
+            $user = AutoEcoleUser::where('telephone', $telephone)->first();
+            if (!$user || $user->auth_provider !== 'telephone' || !$user->telephone_verified) {
+                return response()->json(['success' => false, 'message' => 'Code invalide ou expiré.'], 422);
+            }
+        }
+
+        $result = $this->careyOtpService->verify(
+            $telephone,
+            $purpose,
+            $request->string('code')->toString()
+        );
+
+        return response()->json($result, $result['status']);
+    }
+
+    public function reinitialiserMotDePasse(Request $request): JsonResponse
+    {
+        $request->validate([
+            'telephone' => 'required|string',
+            'verification_token' => 'required|string',
+            'password' => 'required|string|min:6|confirmed',
+        ]);
+
+        $telephone = $this->careyOtpService->normalizePhone($request->string('telephone')->toString());
+        if ($telephone === null || !$this->careyOtpService->isVerified(
+            $telephone,
+            'recuperation',
+            $request->string('verification_token')->toString()
+        )) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Vérification expirée. Demandez un nouveau code WhatsApp.',
+            ], 422);
+        }
+
+        $user = AutoEcoleUser::where('telephone', $telephone)
+            ->where('auth_provider', 'telephone')
+            ->where('telephone_verified', true)
+            ->first();
+
+        if (!$user) {
+            $this->careyOtpService->consumeVerification($telephone, 'recuperation');
+
+            return response()->json(['success' => false, 'message' => 'Compte introuvable.'], 404);
+        }
+
+        $user->password = Hash::make($request->string('password')->toString());
+        $user->save();
+        $user->tokens()->delete();
+        $this->careyOtpService->consumeVerification($telephone, 'recuperation');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Mot de passe réinitialisé. Vous pouvez vous connecter.',
+        ]);
     }
 
     // ──────────────────────────────────────────
