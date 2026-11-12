@@ -7,7 +7,10 @@ use App\Models\ConfigPaiement;
 use App\Models\CentreExamen;
 use App\Models\LieuPratique;
 use App\Models\JourPratique;
+use App\Models\Publicite;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class ConfigController extends Controller
 {
@@ -16,8 +19,9 @@ class ConfigController extends Controller
         $config = ConfigPaiement::getConfig();
         $centresExamen = CentreExamen::orderBy('nom')->get();
         $lieuxPratique = LieuPratique::with('joursPratique')->orderBy('nom')->get();
+        $publiciteActive = Publicite::where('active', true)->latest('published_at')->first();
 
-        return view('admin.auto-ecole.config.index', compact('config', 'centresExamen', 'lieuxPratique'));
+        return view('admin.auto-ecole.config.index', compact('config', 'centresExamen', 'lieuxPratique', 'publiciteActive'));
     }
 
     public function updateFrais(Request $request)
@@ -48,6 +52,46 @@ class ConfigController extends Controller
         $config->update($validated);
 
         return redirect()->back()->with('success', 'Configuration mise à jour avec succès');
+    }
+
+    public function storePublicite(Request $request)
+    {
+        $validated = $request->validate([
+            'image' => 'required|image|mimes:jpg,jpeg,png|max:5120',
+            'redirect_url' => 'required|url:http,https|max:2048',
+        ]);
+
+        $imagePath = $request->file('image')->storePublicly('publicites', 'public');
+        if (!$imagePath) {
+            return redirect()->back()
+                ->withErrors(['image' => 'Impossible de stocker l’image publicitaire.'])
+                ->withInput();
+        }
+
+        try {
+            DB::transaction(function () use ($validated, $imagePath) {
+                Publicite::where('active', true)->update(['active' => false]);
+
+                Publicite::create([
+                    'image_path' => $imagePath,
+                    'redirect_url' => $validated['redirect_url'],
+                    'active' => true,
+                    'published_at' => now(),
+                ]);
+            });
+        } catch (\Throwable $exception) {
+            Storage::disk('public')->delete($imagePath);
+            throw $exception;
+        }
+
+        return redirect()->back()->with('success', 'Publicité publiée avec succès.');
+    }
+
+    public function desactiverPublicite(Publicite $publicite)
+    {
+        $publicite->update(['active' => false]);
+
+        return redirect()->back()->with('success', 'Publicité désactivée.');
     }
 
     // Centres d'examen

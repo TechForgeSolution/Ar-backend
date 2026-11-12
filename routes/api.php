@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AutoEcole\ParrainageController;
 use App\Http\Controllers\Api\AutoEcole\SessionController;
 use App\Http\Controllers\Api\AutoEcole\DashboardController;
 use App\Http\Controllers\Api\AutoEcole\CniController;
+use App\Http\Controllers\Api\AutoEcole\PubliciteController;
 use App\Http\Controllers\Admin\CniController2;
 
 
@@ -59,6 +60,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/profil',                  [AuthController::class, 'mettreAJourProfil']);
     Route::post('/profil/completer',       [AuthController::class, 'completerProfilSocial']);
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/publicite', [PubliciteController::class, 'disponible']);
+    Route::post('/publicite/{publicite}/pris-note', [PubliciteController::class, 'prisNote']);
     Route::delete('/compte/supprimer', [AuthController::class, 'supprimerCompte']);
 
 
@@ -152,5 +155,4 @@ Route::get('/cours/progression', [CoursController::class, 'getProgression']);
 
     
 });
-
 

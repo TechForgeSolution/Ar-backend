@@ -112,6 +112,8 @@ Route::prefix('admin/auto-ecole')->name('admin.auto-ecole.')->middleware(['web',
     Route::get('config', [ConfigController::class, 'index'])->name('config.index');
     Route::post('config/frais', [ConfigController::class, 'updateFrais'])->name('config.frais');
     Route::post('config/general', [ConfigController::class, 'updateGeneral'])->name('config.general');
+    Route::post('config/publicites', [ConfigController::class, 'storePublicite'])->name('config.publicites.store');
+    Route::post('config/publicites/{publicite}/desactiver', [ConfigController::class, 'desactiverPublicite'])->name('config.publicites.desactiver');
 
     // Centres d'examen - ROUTES CORRIGÉES
     Route::post('config/centres-examen', [ConfigController::class, 'storeCentreExamen'])->name('config.store-centre-examen');

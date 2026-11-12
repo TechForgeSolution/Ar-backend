@@ -34,6 +34,71 @@
         </div>
     @endif
 
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-purple-600">
+            <h3 class="text-lg font-semibold text-white flex items-center">
+                <i class="fas fa-ad mr-2"></i>
+                Publicité mobile
+            </h3>
+        </div>
+
+        <div class="p-6 space-y-5">
+            @if($publiciteActive)
+                <div class="flex flex-col sm:flex-row gap-4 items-start">
+                    <img src="{{ $publiciteActive->image_url }}" alt="Publicité actuellement publiée"
+                         class="w-full sm:w-64 rounded-lg border border-gray-200 object-cover">
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-800">Une publicité est actuellement publiée</p>
+                        <a href="{{ $publiciteActive->redirect_url }}" target="_blank" rel="noopener noreferrer"
+                           class="mt-1 inline-block text-sm text-blue-600 hover:underline break-all">
+                            {{ $publiciteActive->redirect_url }}
+                        </a>
+                        <p class="mt-2 text-sm text-gray-500">
+                            Publiée le {{ $publiciteActive->published_at->format('d/m/Y à H:i') }}
+                        </p>
+                        <form action="{{ route('admin.auto-ecole.config.publicites.desactiver', $publiciteActive) }}"
+                              method="POST" class="mt-4"
+                              onsubmit="return confirm('Désactiver cette publicité ?');">
+                            @csrf
+                            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                                <i class="fas fa-stop mr-2"></i>Désactiver la publicité
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @else
+                <p class="text-sm text-gray-600">Aucune publicité n’est actuellement publiée.</p>
+            @endif
+
+            <div class="border-t border-gray-200 pt-5">
+                <h4 class="font-semibold text-gray-800">Publier une nouvelle publicité</h4>
+                <p class="mt-1 text-sm text-gray-500">
+                    Chaque nouvelle publication sera proposée une seule fois à chaque utilisateur. Elle disparaît après 20 minutes.
+                </p>
+                <form action="{{ route('admin.auto-ecole.config.publicites.store') }}" method="POST"
+                      enctype="multipart/form-data" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @csrf
+                    <div>
+                        <label for="publicite-image" class="block text-sm font-medium text-gray-700 mb-1">Image (5 Mo maximum)</label>
+                        <input id="publicite-image" type="file" name="image" accept="image/jpeg,image/png" required
+                               class="w-full rounded-lg border border-gray-300 p-2 text-sm">
+                    </div>
+                    <div>
+                        <label for="publicite-url" class="block text-sm font-medium text-gray-700 mb-1">Lien de redirection</label>
+                        <input id="publicite-url" type="url" name="redirect_url" value="{{ old('redirect_url') }}"
+                               placeholder="https://..." required
+                               class="w-full rounded-lg border-gray-300 focus:border-primary-500 focus:ring-primary-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+                            <i class="fas fa-paper-plane mr-2"></i>Publier la publicité
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Frais de formation -->
         <div class="bg-white rounded-xl shadow-sm overflow-hidden">
