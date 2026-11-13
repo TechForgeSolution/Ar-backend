@@ -16,7 +16,11 @@ class ModuleController extends Controller
             $query->where('type', $request->type);
         }
 
-        $modules = $query->orderBy('type')->orderBy('ordre')->paginate(20);
+        if ($request->filled('type_permis')) {
+            $query->where('type_permis', $request->type_permis);
+        }
+
+        $modules = $query->orderBy('type')->orderBy('ordre')->paginate(20)->withQueryString();
         return view('admin.auto-ecole.modules.index', compact('modules'));
     }
 

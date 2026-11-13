@@ -180,6 +180,13 @@ class CoursService
             ];
         }
 
+        if (!$this->modulePourPermis($user, $lecon->chapitre->module)) {
+            return [
+                'success' => false,
+                'message' => 'Cette leçon n’est pas disponible pour votre permis'
+            ];
+        }
+
         // Vérifier l'accessibilité
         $accessible = $this->leconAccessible($user, $lecon);
 
@@ -236,6 +243,13 @@ class CoursService
             ];
         }
 
+        if (!$this->modulePourPermis($user, $lecon->chapitre->module)) {
+            return [
+                'success' => false,
+                'message' => 'Cette leçon n’est pas disponible pour votre permis'
+            ];
+        }
+
         // Vérifier l'accessibilité
         if (!$this->leconAccessible($user, $lecon)) {
             return [
@@ -271,12 +285,19 @@ class CoursService
             ];
         }
 
-        $quiz = Quiz::with(['chapitre', 'questions.reponses'])->find($quizId);
+        $quiz = Quiz::with(['chapitre.module', 'questions.reponses'])->find($quizId);
 
         if (!$quiz) {
             return [
                 'success' => false,
                 'message' => 'Quiz non trouvé'
+            ];
+        }
+
+        if (!$this->modulePourPermis($user, $quiz->chapitre->module)) {
+            return [
+                'success' => false,
+                'message' => 'Ce quiz n’est pas disponible pour votre permis'
             ];
         }
 
@@ -342,6 +363,13 @@ class CoursService
         return [
             'success' => false,
             'message' => 'Quiz non trouvé'
+        ];
+    }
+
+    if (!$this->modulePourPermis($user, $quiz->chapitre->module)) {
+        return [
+            'success' => false,
+            'message' => 'Ce quiz n’est pas disponible pour votre permis'
         ];
     }
 
@@ -536,10 +564,18 @@ class CoursService
         $chapitre = $lecon->chapitre;
         $module = $chapitre->module;
 
+        if (!$this->modulePourPermis($user, $module)) {
+            return false;
+        }
+
         // Vérifier les modules précédents
         $modulesPrecedents = Module::where('type', $module->type)
             ->where('ordre', '<', $module->ordre)
             ->where('active', true)
+            ->where(function ($query) use ($user) {
+                $query->where('type_permis', 'tous')
+                    ->orWhere('type_permis', $user->type_permis);
+            })
             ->get();
 
         foreach ($modulesPrecedents as $modulePrecedent) {
@@ -580,6 +616,12 @@ class CoursService
         }
 
         return true;
+    }
+
+    private function modulePourPermis(AutoEcoleUser $user, Module $module): bool
+    {
+        return $module->type_permis === 'tous'
+            || $module->type_permis === $user->type_permis;
     }
 
     private function toutesLeconsChapitreTerminees(int $userId, int $chapitreId): bool

@@ -20,7 +20,7 @@
         <div class="bg-gradient-to-r {{ $module->type === 'theorique' ? 'from-blue-500 to-blue-600' : 'from-green-500 to-green-600' }} px-6 py-6">
             <div class="flex items-center space-x-4">
                 <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center">
-                    <i class="fas {{ $module->type === 'theorique' ? 'fa-book' : 'fa-car' }} text-white text-2xl"></i>
+                    <i class="fas {{ $module->type === 'theorique' ? 'fa-book' : ($module->type_permis === 'permis_a' ? 'fa-motorcycle' : 'fa-car') }} text-white text-2xl"></i>
                 </div>
                 <div class="text-white">
                     <h2 class="text-2xl font-bold">{{ $module->nom }}</h2>
@@ -29,7 +29,7 @@
                             {{ ucfirst($module->type) }}
                         </span>
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm bg-white/20">
-                            {{ strtoupper(str_replace('_', ' ', $module->type_permis ?? 'tous')) }}
+                            {{ $module->type_permis === 'permis_a' ? 'PERMIS A — MOTO' : ($module->type_permis === 'permis_b' ? 'PERMIS B — VOITURE' : 'COMMUN À TOUS') }}
                         </span>
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm {{ $module->active ? 'bg-white/30' : 'bg-red-500/50' }}">
                             {{ $module->active ? 'Actif' : 'Inactif' }}

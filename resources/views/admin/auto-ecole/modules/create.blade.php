@@ -44,8 +44,8 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">Type de permis *</label>
                     <select name="type_permis" required class="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                         <option value="tous" {{ old('type_permis') === 'tous' ? 'selected' : '' }}>Tous</option>
-                        <option value="permis_a" {{ old('type_permis') === 'permis_a' ? 'selected' : '' }}>Permis A</option>
-                        <option value="permis_b" {{ old('type_permis') === 'permis_b' ? 'selected' : '' }}>Permis B</option>
+                        <option value="permis_a" {{ old('type_permis') === 'permis_a' ? 'selected' : '' }}>Permis A — Moto</option>
+                        <option value="permis_b" {{ old('type_permis') === 'permis_b' ? 'selected' : '' }}>Permis B — Voiture</option>
                     </select>
                 </div>
 

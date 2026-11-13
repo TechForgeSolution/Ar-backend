@@ -8,11 +8,17 @@
     <!-- Header -->
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div class="flex items-center space-x-4">
-            <form action="{{ route('admin.auto-ecole.modules.index') }}" method="GET" class="flex items-center space-x-2">
+            <form action="{{ route('admin.auto-ecole.modules.index') }}" method="GET" class="flex flex-wrap items-center gap-2">
                 <select name="type" onchange="this.form.submit()" class="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
                     <option value="">Tous les types</option>
                     <option value="theorique" {{ request('type') === 'theorique' ? 'selected' : '' }}>Théorique</option>
                     <option value="pratique" {{ request('type') === 'pratique' ? 'selected' : '' }}>Pratique</option>
+                </select>
+                <select name="type_permis" onchange="this.form.submit()" class="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                    <option value="">Tous les permis</option>
+                    <option value="permis_a" {{ request('type_permis') === 'permis_a' ? 'selected' : '' }}>Permis A — Moto</option>
+                    <option value="permis_b" {{ request('type_permis') === 'permis_b' ? 'selected' : '' }}>Permis B — Voiture</option>
+                    <option value="tous" {{ request('type_permis') === 'tous' ? 'selected' : '' }}>Commun à tous</option>
                 </select>
             </form>
         </div>
@@ -29,7 +35,7 @@
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex items-center space-x-3">
                         <div class="w-12 h-12 rounded-xl {{ $module->type === 'theorique' ? 'bg-blue-100' : 'bg-green-100' }} flex items-center justify-center">
-                            <i class="fas {{ $module->type === 'theorique' ? 'fa-book text-blue-600' : 'fa-car text-green-600' }} text-xl"></i>
+                            <i class="fas {{ $module->type === 'theorique' ? 'fa-book text-blue-600' : ($module->type_permis === 'permis_a' ? 'fa-motorcycle text-green-600' : 'fa-car text-green-600') }} text-xl"></i>
                         </div>
                         <div>
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $module->type === 'theorique' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700' }}">
@@ -49,7 +55,7 @@
                 <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
                     <span><i class="fas fa-layer-group mr-1"></i> {{ $module->chapitres_count }} chapitres</span>
                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-700">
-                        {{ strtoupper(str_replace('_', ' ', $module->type_permis ?? 'tous')) }}
+                        {{ $module->type_permis === 'permis_a' ? 'Permis A — Moto' : ($module->type_permis === 'permis_b' ? 'Permis B — Voiture' : 'Commun à tous') }}
                     </span>
                 </div>
 

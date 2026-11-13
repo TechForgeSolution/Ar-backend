@@ -17,7 +17,7 @@ class PaiementController extends Controller
         Log::info('deposerViaMobile called', ['user_id' => $request->user()->id, 'payload' => $request->all()]);
         
         $validated = $request->validate([
-            'montant' => 'required|numeric|min:10000',
+            'montant' => 'required|integer|in:10000',
             'numero_payeur' => 'required|string'
         ]);
 
